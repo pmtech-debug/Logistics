@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>QDX LOGISTICS | Master v12.0 Final</title>
+    <title>QDX LOGISTICS | Master v8.7</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
@@ -28,16 +30,17 @@
         .grand-total-row { border-top: 3px solid #000; font-weight: 900; font-size: 18px; color: #000; background: #f1f5f9 !important; }
         .sig-line { border-top: 2px solid black; width: 180px; text-align: center; font-size: 11px; font-weight: 900; padding-top: 5px; }
         
-        .conditions-box { font-size: 13px; font-weight: 800; border-top: 3px solid black; margin-top: 20px; padding-top: 10px; line-height: 1.4; color: black; }
+        /* Conditions Styling */
+        .conditions-box { font-size: 13px; font-weight: 800; border-top: 3px solid black; margin-top: 20px; padding-top: 10px; line-height: 1.4; }
         .conditions-box ol { padding-left: 20px; margin: 5px 0; }
-        .agree-text { text-align: center; font-size: 15px; font-weight: 900; margin-top: 15px; text-transform: uppercase; color: black; }
+        .agree-text { text-align: center; font-size: 15px; font-weight: 900; margin-top: 15px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div id="input-screen" class="no-print">
         <nav class="bg-slate-900 p-4 border-b-4 border-orange-500 flex justify-between items-center">
-            <h1 class="text-xl font-black text-orange-500 uppercase">QDX LOGISTICS</h1>
+            <h1 class="text-xl font-black text-orange-500">QDX LOGISTICS</h1>
             <div id="branch-indicator" class="text-[10px] font-black bg-slate-800 px-4 py-1 rounded-full text-orange-500 uppercase">SELECT BRANCH</div>
         </nav>
 
@@ -75,10 +78,15 @@
                             <input id="consName" placeholder="Consignee Name" class="input-box">
                             <input id="consPh" placeholder="Consignee Tel" class="input-box">
                             <textarea id="consAddr" placeholder="Street Address" class="input-box" rows="1"></textarea>
-                            <div class="flex gap-2"><input id="consCity" placeholder="City" class="input-box w-1/2"><input id="consZip" placeholder="Zip" class="input-box w-1/2"></div>
+                            <div class="flex gap-2">
+                                <input id="consCity" placeholder="City" class="input-box w-1/2">
+                                <input id="consZip" placeholder="Zip/Postal" class="input-box w-1/2">
+                            </div>
                         </div>
                     </div>
-                    <div id="item-input-container" class="pt-4 border-t border-slate-700 space-y-2"><div class="flex gap-2"><input type="text" class="item-desc w-3/4 input-box" placeholder="Description"><input type="number" class="item-qty w-1/4 input-box" placeholder="QTY"></div></div>
+                    <div id="item-input-container" class="pt-4 border-t border-slate-700 space-y-2">
+                        <div class="flex gap-2"><input type="text" class="item-desc w-3/4 input-box" placeholder="Description"><input type="number" class="item-qty w-1/4 input-box" placeholder="QTY"></div>
+                    </div>
                     <button onclick="addItemRow()" class="text-xs font-bold text-orange-500 underline">+ ADD ITEM</button>
                 </div>
 
@@ -96,8 +104,9 @@
                     <div class="pt-4 border-t border-slate-700 space-y-4">
                         <div class="flex justify-between text-2xl font-black text-orange-500 uppercase"><span>TOTAL</span><span id="sumTotal">0.00</span></div>
                         <div class="flex justify-between items-center bg-slate-900 p-3 rounded-xl border border-white"><span>PAID</span><input id="valAdv" type="number" class="w-24 text-right bg-transparent outline-none font-bold" oninput="runCalculations()"></div>
+                        <div class="flex justify-between font-bold text-xs uppercase text-slate-400"><span>Balance Due</span><span id="sumBal">0.00</span></div>
                     </div>
-                    <button onclick="generateInvoice()" class="w-full bg-orange-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-orange-500">Generate Invoice</button>
+                    <button onclick="generateInvoice()" class="w-full bg-orange-600 text-white py-5 rounded-2xl font-black uppercase shadow-xl tracking-widest hover:bg-orange-500">Generate Invoice</button>
                 </div>
             </div>
         </div>
@@ -111,7 +120,7 @@
         </div>
         <div class="invoice-container">
             <div class="header-top">
-                <div><h1 style="font-size:20px; font-weight:900; margin:0;">QUICK DELIVERY EXPRESS COURIERS (PVT) LTD.</h1><p id="p-branch-addr" style="font-size:10px; margin:2px 0;"></p><p id="p-branch-tel" style="font-size:10px; margin:2px 0; font-weight:bold;"></p></div>
+                <div><h1 style="font-size:22px; font-weight:900; margin:0;">QUICK DELIVERY EXPRESS COURIERS (PVT) LTD.</h1><p id="p-branch-addr" style="font-size:10px; margin:2px 0;"></p><p id="p-branch-tel" style="font-size:10px; margin:2px 0; font-weight:bold;"></p></div>
                 <img src="qdx_logo.jpeg" style="width:90px;" onerror="this.style.display='none'">
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 30px; margin-top: 10px; font-size: 13px; font-weight: bold;">
@@ -122,6 +131,7 @@
                 <tr><td><b>Sender Tel:</b></td><td id="p-senderPh"></td><td><b>Consignee Tel:</b></td><td id="p-consPh"></td></tr>
                 <tr><td><b>Address:</b></td><td colspan="3" id="p-addr"></td></tr>
                 <tr><td><b>City:</b></td><td id="p-city"></td><td><b>Zip Code:</b></td><td id="p-zip"></td></tr>
+                
                 <tr><td><b>Country:</b></td><td id="p-country"></td><td><b>Air Freight / KG:</b></td><td id="p-perkg"></td></tr>
                 <tr><td><b>Actual Wt:</b></td><td id="p-act"></td><td><b>Chargeable Wt:</b></td><td id="p-chg"></td></tr>
                 <tr><td><b>Vol Wt:</b></td><td id="p-vol"></td><td><b>No. Boxes:</b></td><td id="p-boxes"></td></tr>
@@ -150,21 +160,20 @@
                 </ol>
                 <p class="agree-text">I hereby Agree to all terms & conditions of Quick Delivery Express Couriers (PVT) Ltd.</p>
             </div>
+
             <div style="display:flex; justify-content:space-between; margin-top:50px;"><div class="sig-line">Customer's Signature</div><div class="sig-line">Issuer's Signature</div></div>
         </div>
     </div>
 
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzqeJkJXlkLH2IqFEqjumjxppv0dSkKBbVXc1n8ZyPjdzud4WRW8zAPpx0f_GiD7-MUXA/exec";
-        
-        // Safety String Parsing to avoid syntax crashes
-        let RATE_DATA = {};
-        try {
-            const rawData = `REPLACE_WITH_DATA`;
-            RATE_DATA = JSON.parse(rawData);
-        } catch(e) { console.error("Rate Data Load Error"); }
+        const firebaseConfig = { apiKey: "AIzaSyC-ITx94A6N48whrvi_alhKvfYeHEaPA5Q", authDomain: "ggx-logistics.firebaseapp.com", projectId: "ggx-logistics", storageBucket: "ggx-logistics.firebasestorage.app", messagingSenderId: "710396417305", appId: "1:710396417305:web:ad9b1d4741a0cc98e3e188" };
+        firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
 
-        let currentBranch = ""; let branchCode = ""; let branchAddr = ""; let branchTel = ""; let activeRatePerKg = 0;
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyTdOr2wR8Ngx3rISf6rwvklGjhZ1iV3M-BVCfzJ3ti79rIp2ZhZCi0Q1JN8SvJMZxUzw/exec";
+
+        let currentBranch = ""; let branchCode = ""; let branchAddr = ""; let branchTel = ""; let rateDatabase = []; let activeRatePerKg = 0;
+        async function fetchRates() { const snap = await db.collection('rates').get(); rateDatabase = snap.docs.map(doc => doc.data()); }
+        window.onload = fetchRates;
 
         function setBranch(name, code) {
             currentBranch = name; branchCode = code;
@@ -178,52 +187,33 @@
         async function lookupCustomer() {
             const ph = document.getElementById('senderPh').value;
             if (ph.length < 9) return;
-            try {
-                const resp = await fetch(SHEETS_URL + "?ph=" + ph);
-                const name = await resp.text();
-                if (name && name !== "Error") { document.getElementById('senderName').value = name; }
-            } catch(e) { console.log("Sheet lookup failed"); }
+            const snap = await db.collection('invoices').where('senderPh', '==', ph).limit(1).get();
+            if (!snap.empty) { document.getElementById('senderName').value = snap.docs[0].data().sender; }
         }
 
         function runCalculations() {
-            const country = document.getElementById('countrySearch').value.toUpperCase();
-            const service = document.getElementById('serviceType').value.toUpperCase();
-            const actWt = parseFloat(document.getElementById('actWt').value || 0);
-            const volWt = parseFloat(document.getElementById('volWt').value || 0);
-            const chgWt = Math.ceil(Math.max(actWt, volWt));
+            const act = parseFloat(document.getElementById('actWt').value || 0);
+            const vol = parseFloat(document.getElementById('volWt').value || 0);
+            const chgWt = Math.ceil(Math.max(act, vol));
             document.getElementById('displayChgWt').innerText = chgWt + " KG";
-
-            let freight = 0; activeRatePerKg = 0;
-            const info = RATE_DATA[country] ? RATE_DATA[country][service] : null;
-
-            if (info) {
-                if (service === 'EXPRESS') {
-                    if (actWt <= 0.5 && info.DOC > 0) { freight = info.DOC; }
-                    else if (chgWt <= 10) { freight = info.BASE + (chgWt - 1) * info.ADDER; }
-                    else { 
-                        const slab = info.SLABS.find(s => chgWt >= s.min); 
-                        if (slab) { freight = chgWt * slab.rate; activeRatePerKg = slab.rate; }
-                    }
-                } else if (service === 'ECONOMY') {
-                    if (chgWt < 5) { freight = info.BASE + (chgWt - 1) * info.ADDER; }
-                    else {
-                        const slab = info.SLABS.find(s => chgWt >= s.min && chgWt <= s.max) || info.SLABS[info.SLABS.length - 1];
-                        if (slab) { freight = chgWt * slab.rate; activeRatePerKg = slab.rate; }
-                    }
-                }
-            }
+            const country = document.getElementById('countrySearch').value;
+            const svc = document.getElementById('serviceType').value;
+            const dbRef = rateDatabase.filter(r => r.country.toLowerCase() === country.toLowerCase() && r.service.toUpperCase() === svc.toUpperCase());
+            activeRatePerKg = 0; if (dbRef.length > 0) { const row = dbRef.find(r => chgWt >= r.minKg && chgWt <= r.maxKg) || dbRef[0]; activeRatePerKg = row ? row.rate : 0; }
             const vac = document.getElementById('checkVac').checked ? (parseFloat(document.getElementById('vacQty').value||0)*parseFloat(document.getElementById('vacPrice').value||0)) : 0;
             const com = document.getElementById('checkCom').checked ? (parseFloat(document.getElementById('comQty').value||0)*parseFloat(document.getElementById('comPrice').value||0)) : 0;
             const ins = document.getElementById('checkIns').checked ? parseFloat(document.getElementById('valIns').value||0) : 0;
-            const total = freight + vac + com + ins;
+            const total = (chgWt * activeRatePerKg) + vac + com + ins;
             document.getElementById('sumTotal').innerText = total.toFixed(2);
+            document.getElementById('sumBal').innerText = (total - (parseFloat(document.getElementById('valAdv').value)||0)).toFixed(2);
         }
 
-        function generateInvoice() {
+        async function generateInvoice() {
             if(!currentBranch) { alert("Select Branch First!"); return; }
             const now = new Date();
             const invNo = branchCode + now.getFullYear().toString().slice(-2) + (now.getMonth()+1).toString().padStart(2,'0') + now.getDate().toString().padStart(2,'0') + now.getHours().toString().padStart(2,'0') + now.getMinutes().toString().padStart(2,'0');
-            
+
+            // Map Print View
             document.getElementById('p-inv').innerText = invNo;
             document.getElementById('p-branch-addr').innerText = branchAddr;
             document.getElementById('p-branch-tel').innerText = branchTel;
@@ -231,11 +221,14 @@
             document.getElementById('p-senderPh').innerText = document.getElementById('senderPh').value;
             document.getElementById('p-cons').innerText = document.getElementById('consName').value;
             document.getElementById('p-consPh').innerText = document.getElementById('consPh').value;
+            
+            // SEPARATED ELEMENTS MAPPING
             document.getElementById('p-addr').innerText = document.getElementById('consAddr').value;
             document.getElementById('p-city').innerText = document.getElementById('consCity').value;
             document.getElementById('p-zip').innerText = document.getElementById('consZip').value;
+
             document.getElementById('p-country').innerText = document.getElementById('countrySearch').value;
-            document.getElementById('p-perkg').innerText = activeRatePerKg > 0 ? activeRatePerKg.toFixed(2) : "-";
+            document.getElementById('p-perkg').innerText = activeRatePerKg.toFixed(2);
             document.getElementById('p-act').innerText = (document.getElementById('actWt').value || "0") + " KG";
             document.getElementById('p-chg').innerText = document.getElementById('displayChgWt').innerText;
             document.getElementById('p-vol').innerText = (document.getElementById('volWt').value || "0") + " KG";
@@ -244,7 +237,6 @@
             const vac = document.getElementById('checkVac').checked ? (parseFloat(document.getElementById('vacQty').value||0)*parseFloat(document.getElementById('vacPrice').value||0)) : 0;
             const com = document.getElementById('checkCom').checked ? (parseFloat(document.getElementById('comQty').value||0)*parseFloat(document.getElementById('comPrice').value||0)) : 0;
             const ins = document.getElementById('checkIns').checked ? parseFloat(document.getElementById('valIns').value||0) : 0;
-            
             document.getElementById('p-row-vac').style.display = vac > 0 ? 'table-row' : 'none';
             document.getElementById('p-val-vac').innerText = vac.toFixed(2);
             document.getElementById('p-row-com').style.display = com > 0 ? 'table-row' : 'none';
@@ -258,7 +250,7 @@
 
             document.getElementById('p-grand').innerText = document.getElementById('sumTotal').innerText;
             document.getElementById('p-paid').innerText = document.getElementById('valAdv').value || "0.00";
-            document.getElementById('p-bal').innerText = (parseFloat(document.getElementById('sumTotal').innerText) - (parseFloat(document.getElementById('valAdv').value)||0)).toFixed(2);
+            document.getElementById('p-bal').innerText = document.getElementById('sumBal').innerText;
             document.getElementById('p-date').innerText = now.toLocaleDateString('en-GB');
 
             document.getElementById('input-screen').style.display = 'none';
@@ -268,19 +260,20 @@
                 branch: currentBranch, invNo: invNo, sender: document.getElementById('senderName').value, senderPh: document.getElementById('senderPh').value,
                 consignee: document.getElementById('consName').value, destination: document.getElementById('countrySearch').value,
                 weight: document.getElementById('displayChgWt').innerText, total: document.getElementById('sumTotal').innerText,
-                payMethod: document.getElementById('payMethod').value, city: document.getElementById('consCity').value, zip: document.getElementById('consZip').value
+                payMethod: document.getElementById('payMethod').value
             };
             fetch(SHEETS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            db.collection('invoices').add(payload);
         }
 
         function shareWhatsApp() {
             const phone = document.getElementById('senderPh').value;
-            const msg = encodeURIComponent(`*QDX OFFICIAL INVOICE*\\nNo: ${document.getElementById('p-inv').innerText}\\nTotal: LKR ${document.getElementById('p-grand').innerText}`);
+            const msg = encodeURIComponent(`*QDX OFFICIAL INVOICE*\nNo: ${document.getElementById('p-inv').innerText}\nTotal: LKR ${document.getElementById('p-grand').innerText}\nPlease find the PDF attached.`);
             window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
         }
 
         function goBackToInput() { document.getElementById('invoice-page').style.display = 'none'; document.getElementById('input-screen').style.display = 'block'; }
-        function filterCountries() { const q = document.getElementById('countrySearch').value.toLowerCase(); const res = document.getElementById('search-results'); const unique = Object.keys(RATE_DATA).sort(); const filtered = unique.filter(c => c.toLowerCase().includes(q)); res.innerHTML = filtered.map(c => `<div class="p-3 cursor-pointer hover:bg-orange-600 text-white font-bold border-b border-slate-700" onclick="selectCountry('${c.replace(/'/g, "\\\\'")}')">${c}</div>`).join(''); res.classList.toggle('hidden', q === "" || filtered.length === 0); }
+        function filterCountries() { const q = document.getElementById('countrySearch').value.toLowerCase(); const res = document.getElementById('search-results'); const unique = [...new Set(rateDatabase.map(r => r.country))].sort(); const filtered = unique.filter(c => c.toLowerCase().includes(q)); res.innerHTML = filtered.map(c => `<div class="p-3 cursor-pointer hover:bg-orange-600 text-white font-bold border-b border-slate-700" onclick="selectCountry('${c}')">${c}</div>`).join(''); res.classList.toggle('hidden', q === "" || filtered.length === 0); }
         function selectCountry(c) { document.getElementById('countrySearch').value = c; document.getElementById('search-results').classList.add('hidden'); runCalculations(); }
         function addItemRow() { const div = document.createElement('div'); div.className = "flex gap-2 mt-2"; div.innerHTML = `<input type="text" class="item-desc w-3/4 input-box" placeholder="Description"><input type="number" class="item-qty w-1/4 input-box" placeholder="QTY">`; document.getElementById('item-input-container').appendChild(div); }
     </script>
